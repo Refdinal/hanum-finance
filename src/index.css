@@ -1,0 +1,209 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors — DESIGN.md (Nuri lavender art-deco) */
+  --color-hero-violet: #beaaff;
+  --color-card-lilac: #e2d9ff;
+  --color-bitcoin-orange: #f97316;
+  --color-warm-cream: #fff7ed;
+  --color-lavender-mist: #f7f2ff;
+  --color-off-white: #f9fafb;
+  --color-pure-white: #ffffff;
+  --color-ink-plum: #2c232e;
+  --color-graphite: #4b5563;
+  --color-slate: #6b7280;
+  --color-steel: #374151;
+  --color-mist: #e2e8f0;
+  --color-line-fog: #d1d5db;
+  --color-jet: #000000;
+
+  /* Semantic aliases used across components */
+  --color-canvas: #f7f2ff;
+  --color-card: #e2d9ff;
+  --color-panel: #ffffff;
+  --color-line: #e2e8f0;
+  --color-bone: #2c232e;
+  --color-fog: #6b7280;
+  --color-glow: #f97316;
+  --color-mint: #16a34a;
+  --color-rose: #dc2626;
+  --color-amber: #f97316;
+
+  /* Typography */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Antonio", "Druk Wide Bold", ui-sans-serif, sans-serif;
+  --font-serif: "Lora", "Source Serif Pro", ui-serif, Georgia, serif;
+  --font-data: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Radii — pill or soft-card only */
+  --radius-card: 48px;
+  --radius-panel: 48px;
+  --radius-pill: 9999px;
+
+  /* Shadows */
+  --shadow-soft: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px;
+  --shadow-ring: rgba(44, 35, 46, 0.16) 0px 0px 0px 1px;
+}
+
+html,
+body,
+#root {
+  min-height: 100vh;
+}
+
+body {
+  background-color: var(--color-canvas);
+  background-image: radial-gradient(
+    circle at 50% 0%,
+    rgba(190, 170, 255, 0.45),
+    rgba(0, 0, 0, 0) 48%
+  );
+  background-repeat: no-repeat;
+  color: var(--color-graphite);
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--color-bone);
+}
+
+/* Reusable component classes */
+@layer components {
+  .card-flat {
+    background-color: var(--color-panel);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  .card-lilac {
+    background-color: var(--color-card);
+    border: 1px solid transparent;
+    border-radius: var(--radius-card);
+  }
+
+  .btn-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-pill);
+    padding: 0.65rem 1.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1.33;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .btn-solid {
+    background-color: var(--color-bone);
+    color: var(--color-pure-white);
+    border: 1px solid var(--color-bone);
+  }
+  .btn-solid:hover {
+    background-color: var(--color-glow);
+    border-color: var(--color-glow);
+  }
+  .btn-solid:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--color-bone);
+    border: 1px solid var(--color-bone);
+  }
+  .btn-ghost:hover {
+    background-color: rgba(44, 35, 46, 0.06);
+  }
+
+  .btn-muted {
+    background-color: transparent;
+    color: var(--color-graphite);
+    border: 1px solid var(--color-line-fog);
+  }
+  .btn-muted:hover {
+    color: var(--color-bone);
+    border-color: var(--color-bone);
+  }
+
+  .btn-danger {
+    background-color: transparent;
+    color: var(--color-rose);
+    border: 1px solid rgba(220, 38, 38, 0.4);
+  }
+  .btn-danger:hover {
+    background-color: rgba(220, 38, 38, 0.08);
+  }
+
+  .input-dark {
+    width: 100%;
+    background-color: var(--color-pure-white);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-pill);
+    color: var(--color-bone);
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    outline: none;
+  }
+  .input-dark:focus {
+    border-color: var(--color-hero-violet);
+    box-shadow: var(--shadow-ring);
+  }
+  .input-dark option {
+    background-color: var(--color-pure-white);
+    color: var(--color-bone);
+  }
+
+  .label-dark {
+    display: block;
+    color: var(--color-fog);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    margin-bottom: 0.4rem;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius-pill);
+    padding: 0.2rem 0.7rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+
+  .table-dark {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .table-dark thead {
+    background-color: var(--color-card-lilac);
+  }
+  .table-dark th {
+    color: var(--color-graphite);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    text-align: left;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--color-line);
+  }
+  .table-dark td {
+    color: var(--color-graphite);
+    font-size: 0.85rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--color-line);
+    vertical-align: middle;
+  }
+  .table-dark tbody tr:hover {
+    background-color: rgba(190, 170, 255, 0.12);
+  }
+}
