@@ -185,7 +185,7 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {[...dataGrafik].reverse().map((b, i) => (
+                {dataGrafik.map((b, i) => (
                   <tr key={i}>
                     <td className="whitespace-nowrap capitalize text-ink-plum">{periodeGrafik === "harian" ? b.label : b.bulanPenuh}</td>
                     <td className="text-right text-slate">{formatRupiah(b.sandang)}</td>
