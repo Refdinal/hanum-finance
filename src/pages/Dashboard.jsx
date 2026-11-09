@@ -8,6 +8,7 @@ import LineChart from "../components/LineChart";
 const Dashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [periodeGrafik, setPeriodeGrafik] = useState("harian");
 
   useEffect(() => {
     let active = true;
@@ -45,6 +46,13 @@ const Dashboard = () => {
     amal: b.amal,
     total: b.total,
   }));
+
+  const harian = (data.belanja_harian || []).map((b) => ({
+    ...b,
+    label: b.label || String(Number(b.tanggal.slice(-2))),
+    bulanPenuh: b.tanggal,
+  }));
+  const dataGrafik = periodeGrafik === "harian" ? harian : bulanan;
 
   const nBulan = bulanan.length;
   const totalPokok = bulanan.reduce((s, b) => s + b.pokok, 0);
@@ -112,10 +120,33 @@ const Dashboard = () => {
 
       <section>
         <Card className="p-6">
-          <SectionTitle>Pengeluaran Bulanan (12 Bulan)</SectionTitle>
-          {bulanan.length ? (
+          <SectionTitle
+            right={
+              <div className="flex rounded-full border border-line p-1" role="group" aria-label="Periode grafik pengeluaran">
+                {[
+                  { key: "harian", label: "Harian" },
+                  { key: "bulanan", label: "Bulanan" },
+                ].map((opsi) => (
+                  <button
+                    key={opsi.key}
+                    type="button"
+                    onClick={() => setPeriodeGrafik(opsi.key)}
+                    aria-pressed={periodeGrafik === opsi.key}
+                    className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                      periodeGrafik === opsi.key ? "bg-ink-plum text-white" : "text-slate hover:text-ink-plum"
+                    }`}
+                  >
+                    {opsi.label}
+                  </button>
+                ))}
+              </div>
+            }
+          >
+            {periodeGrafik === "harian" ? "Pengeluaran Harian (Bulan Ini)" : "Pengeluaran Bulanan (12 Bulan)"}
+          </SectionTitle>
+          {dataGrafik.length ? (
             <LineChart
-              data={bulanan}
+              data={dataGrafik}
               series={[
                 { key: "pokok", label: "Total Pokok", shortLabel: "Total Pokok", color: "#6ae4ff", defaultOn: true },
                 { key: "total", label: "Total", shortLabel: "Total", color: "#ffb84c", defaultOn: true },
@@ -136,13 +167,13 @@ const Dashboard = () => {
       <section>
         <Card className="overflow-hidden">
           <div className="p-6 pb-0">
-            <SectionTitle>Rincian Bulanan Grafik</SectionTitle>
+            <SectionTitle>{periodeGrafik === "harian" ? "Rincian Harian Grafik" : "Rincian Bulanan Grafik"}</SectionTitle>
           </div>
           <div className="overflow-x-auto">
             <table className="table-dark">
               <thead>
                 <tr>
-                  <th>Bulan</th>
+                  <th>{periodeGrafik === "harian" ? "Tanggal" : "Bulan"}</th>
                   <th className="text-right">Sandang</th>
                   <th className="text-right">Pangan</th>
                   <th className="text-right">Papan</th>
@@ -154,9 +185,9 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {[...bulanan].reverse().map((b, i) => (
+                {[...dataGrafik].reverse().map((b, i) => (
                   <tr key={i}>
-                    <td className="whitespace-nowrap capitalize text-ink-plum">{b.bulanPenuh}</td>
+                    <td className="whitespace-nowrap capitalize text-ink-plum">{periodeGrafik === "harian" ? b.label : b.bulanPenuh}</td>
                     <td className="text-right text-slate">{formatRupiah(b.sandang)}</td>
                     <td className="text-right text-slate">{formatRupiah(b.pangan)}</td>
                     <td className="text-right text-slate">{formatRupiah(b.papan)}</td>
