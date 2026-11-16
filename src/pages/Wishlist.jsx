@@ -14,6 +14,7 @@ const Wishlist = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [editNama, setEditNama] = useState("");
   const [editHarga, setEditHarga] = useState("");
+  const [deletingItem, setDeletingItem] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -71,12 +72,14 @@ const Wishlist = () => {
     }
   };
 
-  const hapusItem = async (id) => {
+  const hapusItem = async () => {
+    if (!deletingItem) return;
     setSaving(true);
     setError("");
     try {
-      await api.delete(`/wishlist/${id}`);
-      setItems((current) => current.filter((item) => item.id !== id));
+      await api.delete(`/wishlist/${deletingItem.id}`);
+      setItems((current) => current.filter((item) => item.id !== deletingItem.id));
+      setDeletingItem(null);
     } catch (e) {
       console.error(e);
       setError(e.response?.data?.message || "Gagal menghapus item Wishlist.");
@@ -189,10 +192,11 @@ const Wishlist = () => {
                       <Badge tone={tersedia ? "mint" : "rose"}>{tersedia ? "Available" : "Not available"}</Badge>
                     </td>
                     <td className="text-right">
+                      <div className="flex justify-end gap-2">
                       <Button
                         type="button"
                         variant="muted"
-                        className="px-3 py-1.5"
+                        className="min-w-20 px-3 py-1.5"
                         onClick={() => bukaEdit(item)}
                         disabled={saving}
                         aria-label={`Edit ${item.nama}`}
@@ -202,13 +206,14 @@ const Wishlist = () => {
                       <Button
                         type="button"
                         variant="danger"
-                        className="px-3 py-1.5"
-                        onClick={() => hapusItem(item.id)}
+                        className="min-w-20 px-3 py-1.5"
+                        onClick={() => setDeletingItem(item)}
                         disabled={saving}
                         aria-label={`Hapus ${item.nama} dari Wishlist`}
                       >
                         Hapus
                       </Button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -244,6 +249,20 @@ const Wishlist = () => {
             <input id="edit-wishlist-harga" className="input-dark" type="number" min="1" step="1" value={editHarga} onChange={(event) => setEditHarga(event.target.value)} required />
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        open={!!deletingItem}
+        onClose={() => !saving && setDeletingItem(null)}
+        title="Konfirmasi Hapus"
+        footer={
+          <>
+            <Button variant="muted" type="button" onClick={() => setDeletingItem(null)} disabled={saving}>Batal</Button>
+            <Button variant="danger" type="button" onClick={hapusItem} disabled={saving}>{saving ? "Menghapus..." : "Ya, Hapus"}</Button>
+          </>
+        }
+      >
+        Yakin ingin menghapus <span className="font-semibold text-ink-plum">{deletingItem?.nama}</span> dari Wishlist?
       </Modal>
     </div>
   );
