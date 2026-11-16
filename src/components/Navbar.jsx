@@ -5,6 +5,7 @@ const links = [
   { to: "/", label: "Dashboard", end: true },
   { to: "/transactions", label: "Transaksi" },
   { to: "/investasi", label: "Investasi" },
+  { to: "/wishlist", label: "Wishlist" },
 ];
 
 const linkClass = ({ isActive }) =>

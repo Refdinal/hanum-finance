@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import TransactionForm from "./pages/TransactionForm";
 import Investasi from "./pages/Investasi";
+import Wishlist from "./pages/Wishlist";
 
 const App = () => {
   const [loggedIn, setLoggedIn] = useState(isSessionValid());
@@ -28,6 +29,7 @@ const App = () => {
           <Route path="/transactions/new" element={<TransactionForm />} />
           <Route path="/transactions/edit/:id" element={<TransactionForm />} />
           <Route path="/investasi" element={<Investasi />} />
+          <Route path="/wishlist" element={<Wishlist />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
