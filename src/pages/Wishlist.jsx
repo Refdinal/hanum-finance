@@ -18,17 +18,24 @@ const Wishlist = () => {
 
   useEffect(() => {
     let active = true;
-    Promise.all([api.get("/transaksi/dashboard"), api.get("/wishlist")])
-      .then(([dashboard, wishlist]) => {
-        if (!active) return;
-        setDataAset(dashboard.data);
-        setItems(wishlist.data.wishlist || []);
+    const loadWishlist = api
+      .get("/wishlist")
+      .then((response) => {
+        if (active) setItems(response.data.wishlist || []);
       })
       .catch((e) => {
         console.error(e);
-        if (active) setError("Gagal memuat Wishlist. Coba muat ulang halaman.");
+        if (active) setError("Gagal memuat Wishlist. Pastikan backend dan tabel Wishlist sudah tersedia.");
+      });
+
+    const loadDashboard = api
+      .get("/transaksi/dashboard")
+      .then((response) => {
+        if (active) setDataAset(response.data);
       })
-      .finally(() => active && setLoading(false));
+      .catch((e) => console.error("Gagal memuat arus kas liquid:", e));
+
+    Promise.allSettled([loadWishlist, loadDashboard]).finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
