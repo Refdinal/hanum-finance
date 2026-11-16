@@ -160,7 +160,6 @@ const Wishlist = () => {
               type="number"
               min="1"
               step="1"
-              placeholder="3000000"
               value={harga}
               onChange={(event) => setHarga(event.target.value)}
               required
@@ -185,11 +184,26 @@ const Wishlist = () => {
               {items.map((item) => {
                 const tersedia = Number(item.harga) <= totalLiquid;
                 return (
-                  <tr key={item.id} className={tersedia ? "bg-mint/10" : "bg-rose/10"}>
+                  <tr key={item.id} className={tersedia ? "bg-mint/10" : "bg-rose/25"}>
                     <td className="font-medium text-ink-plum">{item.nama}</td>
                     <td className="text-right font-semibold">{formatRupiah(item.harga)}</td>
                     <td>
-                      <Badge tone={tersedia ? "mint" : "rose"}>{tersedia ? "Available" : "Not available"}</Badge>
+                      <Badge tone={tersedia ? "mint" : "rose"}>
+                        <span className="sr-only">{tersedia ? "Available" : "Not available"}</span>
+                        <svg
+                          aria-hidden="true"
+                          title={tersedia ? "Available" : "Not available"}
+                          viewBox="0 0 24 24"
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          {tersedia ? <path d="m5 12 4 4L19 6" /> : <path d="M18 6 6 18M6 6l12 12" />}
+                        </svg>
+                      </Badge>
                     </td>
                     <td className="text-right">
                       <div className="flex justify-end gap-2">
@@ -200,8 +214,11 @@ const Wishlist = () => {
                         onClick={() => bukaEdit(item)}
                         disabled={saving}
                         aria-label={`Edit ${item.nama}`}
+                        title="Edit"
                       >
-                        Edit
+                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z" />
+                        </svg>
                       </Button>
                       <Button
                         type="button"
@@ -210,8 +227,11 @@ const Wishlist = () => {
                         onClick={() => setDeletingItem(item)}
                         disabled={saving}
                         aria-label={`Hapus ${item.nama} dari Wishlist`}
+                        title="Hapus"
                       >
-                        Hapus
+                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                        </svg>
                       </Button>
                       </div>
                     </td>

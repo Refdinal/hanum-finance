@@ -31,9 +31,6 @@ const Navbar = ({ onLogout }) => (
             {l.label}
           </NavLink>
         ))}
-        <Link to="/transactions/new" className="btn-pill btn-solid ml-2">
-          + Tambah
-        </Link>
         <button onClick={onLogout} className="btn-pill btn-danger ml-1">
           Logout
         </button>
