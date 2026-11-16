@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { formatRupiah } from "../lib/format";
-import { Badge, Button, Card, SectionTitle, Spinner } from "../components/ui";
+import { Badge, Button, Card, Modal, SectionTitle, Spinner } from "../components/ui";
 
 const Wishlist = () => {
   const [items, setItems] = useState([]);
@@ -11,6 +11,9 @@ const Wishlist = () => {
   const [error, setError] = useState("");
   const [nama, setNama] = useState("");
   const [harga, setHarga] = useState("");
+  const [editingItem, setEditingItem] = useState(null);
+  const [editNama, setEditNama] = useState("");
+  const [editHarga, setEditHarga] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -30,20 +33,23 @@ const Wishlist = () => {
     };
   }, []);
 
-  const totalAset = useMemo(() => {
+  const totalLiquid = useMemo(() => {
     if (!dataAset) return 0;
     const akun = dataAset.akun || {};
     const saldo = dataAset.saldo || [];
-    const liquid = saldo
+    return saldo
       .filter((s) => (akun.liquid || []).includes(s.akun))
       .reduce((total, s) => total + Number(s.saldo || 0), 0);
-    const investasi = (dataAset.investasi?.rincian || [])
-      .filter((r) => Number(r.saldo) !== 0)
-      .reduce((total, r) => total + Number(r.saldo || 0), 0);
-    return liquid + investasi;
   }, [dataAset]);
 
   const totalWishlist = items.reduce((total, item) => total + Number(item.harga || 0), 0);
+  const progressWishlist = totalLiquid > 0 ? Math.min((totalWishlist / totalLiquid) * 100, 100) : totalWishlist > 0 ? 100 : 0;
+
+  const bukaEdit = (item) => {
+    setEditingItem(item);
+    setEditNama(item.nama);
+    setEditHarga(String(item.harga));
+  };
 
   const tambahItem = async (event) => {
     event.preventDefault();
@@ -79,6 +85,25 @@ const Wishlist = () => {
     }
   };
 
+  const simpanEdit = async (event) => {
+    event.preventDefault();
+    const hargaItem = Number(editHarga);
+    if (!editingItem || !editNama.trim() || !Number.isFinite(hargaItem) || hargaItem <= 0) return;
+
+    setSaving(true);
+    setError("");
+    try {
+      const response = await api.put(`/wishlist/${editingItem.id}`, { nama: editNama.trim(), harga: hargaItem });
+      setItems((current) => current.map((item) => item.id === editingItem.id ? response.data.item : item));
+      setEditingItem(null);
+    } catch (e) {
+      console.error(e);
+      setError(e.response?.data?.message || "Gagal mengubah item Wishlist.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) return <Spinner />;
 
   return (
@@ -88,9 +113,26 @@ const Wishlist = () => {
       {error && <p role="alert" className="rounded-2xl border border-rose/40 bg-rose/10 px-4 py-3 text-sm text-rose">{error}</p>}
 
       <Card className="border-hero-violet bg-hero-violet/15 p-6">
-        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.09em] text-slate">Total Wishlist</p>
-        <p className="mt-2 text-3xl font-bold tracking-tight text-ink-plum">{formatRupiah(totalWishlist)}</p>
-        <p className="mt-2 text-sm text-graphite">Total aset saat ini: {formatRupiah(totalAset)}</p>
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div>
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.09em] text-slate">Total Wishlist</p>
+            <p className="mt-2 text-2xl font-bold tracking-tight text-ink-plum">{formatRupiah(totalWishlist)}</p>
+          </div>
+          <div>
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.09em] text-slate">Arus Kas Liquid</p>
+            <p className="mt-2 text-2xl font-bold tracking-tight text-bitcoin-orange">{formatRupiah(totalLiquid)}</p>
+          </div>
+        </div>
+        <div className="mt-5" role="progressbar" aria-label="Perbandingan total Wishlist dengan arus kas liquid" aria-valuenow={Math.round(progressWishlist)} aria-valuemin={0} aria-valuemax={100}>
+          <div className="mb-2 flex justify-between text-xs text-graphite">
+            <span>Penggunaan arus kas liquid</span>
+            <span>{progressWishlist.toFixed(1)}%</span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-pure-white/80">
+            <div className={`h-full rounded-full transition-all ${progressWishlist >= 100 ? "bg-rose" : "bg-mint"}`} style={{ width: `${progressWishlist}%` }} />
+          </div>
+          <p className="mt-2 text-xs text-graphite">Sisa setelah Wishlist: {formatRupiah(totalLiquid - totalWishlist)}</p>
+        </div>
       </Card>
 
       <Card className="p-6">
@@ -101,7 +143,7 @@ const Wishlist = () => {
             <input
               id="wishlist-nama"
               className="input-dark"
-              placeholder="Contoh: TV"
+              placeholder="Masukkan nama item"
               value={nama}
               onChange={(event) => setNama(event.target.value)}
               required
@@ -125,7 +167,7 @@ const Wishlist = () => {
         </form>
       </Card>
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden !rounded-2xl">
         <div className="overflow-x-auto">
           <table className="table-dark">
             <thead>
@@ -138,7 +180,7 @@ const Wishlist = () => {
             </thead>
             <tbody>
               {items.map((item) => {
-                const tersedia = Number(item.harga) <= totalAset;
+                const tersedia = Number(item.harga) <= totalLiquid;
                 return (
                   <tr key={item.id} className={tersedia ? "bg-mint/10" : "bg-rose/10"}>
                     <td className="font-medium text-ink-plum">{item.nama}</td>
@@ -147,6 +189,16 @@ const Wishlist = () => {
                       <Badge tone={tersedia ? "mint" : "rose"}>{tersedia ? "Available" : "Not available"}</Badge>
                     </td>
                     <td className="text-right">
+                      <Button
+                        type="button"
+                        variant="muted"
+                        className="px-3 py-1.5"
+                        onClick={() => bukaEdit(item)}
+                        disabled={saving}
+                        aria-label={`Edit ${item.nama}`}
+                      >
+                        Edit
+                      </Button>
                       <Button
                         type="button"
                         variant="danger"
@@ -170,6 +222,29 @@ const Wishlist = () => {
           </table>
         </div>
       </Card>
+
+      <Modal
+        open={!!editingItem}
+        onClose={() => !saving && setEditingItem(null)}
+        title="Edit Item Wishlist"
+        footer={
+          <>
+            <Button variant="muted" type="button" onClick={() => setEditingItem(null)} disabled={saving}>Batal</Button>
+            <Button type="submit" form="edit-wishlist-form" disabled={saving}>{saving ? "Menyimpan..." : "Simpan"}</Button>
+          </>
+        }
+      >
+        <form id="edit-wishlist-form" onSubmit={simpanEdit} className="space-y-4">
+          <div>
+            <label className="label-dark" htmlFor="edit-wishlist-nama">Nama item</label>
+            <input id="edit-wishlist-nama" className="input-dark" value={editNama} onChange={(event) => setEditNama(event.target.value)} required />
+          </div>
+          <div>
+            <label className="label-dark" htmlFor="edit-wishlist-harga">Harga (Rp)</label>
+            <input id="edit-wishlist-harga" className="input-dark" type="number" min="1" step="1" value={editHarga} onChange={(event) => setEditHarga(event.target.value)} required />
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
