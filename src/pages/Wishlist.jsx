@@ -176,7 +176,7 @@ const Wishlist = () => {
               <tr>
                 <th>Item</th>
                 <th className="text-right">Harga</th>
-                <th>Status</th>
+                <th>Cukup Dana</th>
                 <th className="text-right">Aksi</th>
               </tr>
             </thead>
@@ -210,7 +210,7 @@ const Wishlist = () => {
                       <Button
                         type="button"
                         variant="muted"
-                        className="min-w-20 px-3 py-1.5"
+                        className="h-8 min-w-0 px-2 py-1"
                         onClick={() => bukaEdit(item)}
                         disabled={saving}
                         aria-label={`Edit ${item.nama}`}
@@ -223,7 +223,7 @@ const Wishlist = () => {
                       <Button
                         type="button"
                         variant="danger"
-                        className="min-w-20 px-3 py-1.5"
+                        className="h-8 min-w-0 px-2 py-1"
                         onClick={() => setDeletingItem(item)}
                         disabled={saving}
                         aria-label={`Hapus ${item.nama} dari Wishlist`}
