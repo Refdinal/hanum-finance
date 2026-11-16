@@ -20,6 +20,8 @@ const Wishlist = () => {
   const [editSatuan, setEditSatuan] = useState("pcs");
   const [editHarga, setEditHarga] = useState("");
   const [deletingItem, setDeletingItem] = useState(null);
+  const [restoringItem, setRestoringItem] = useState(null);
+  const [checkingOutItem, setCheckingOutItem] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -32,24 +34,22 @@ const Wishlist = () => {
 
     const loadDashboard = api.get("/transaksi/dashboard").then((response) => {
       if (active) setDataAset(response.data);
-    }).catch((e) => console.error("Gagal memuat arus kas liquid:", e));
+    }).catch((e) => console.error("Gagal memuat saldo BRI:", e));
 
     Promise.allSettled([loadWishlist, loadDashboard]).finally(() => active && setLoading(false));
     return () => { active = false; };
   }, []);
 
-  const totalLiquid = useMemo(() => {
+  const saldoBRI = useMemo(() => {
     if (!dataAset) return 0;
-    const akun = dataAset.akun || {};
-    return (dataAset.saldo || [])
-      .filter((s) => (akun.liquid || []).includes(s.akun))
-      .reduce((total, s) => total + Number(s.saldo || 0), 0);
+    const rekeningBRI = (dataAset.saldo || []).find((rekening) => String(rekening.akun).trim().toLowerCase() === "bri");
+    return Number(rekeningBRI?.saldo || 0);
   }, [dataAset]);
 
   const wishlistItems = items.filter((item) => item.status !== "checkout");
   const checkoutItems = items.filter((item) => item.status === "checkout");
   const totalWishlist = wishlistItems.reduce((total, item) => total + Number(item.harga || 0) * Number(item.volume || 1), 0);
-  const progressWishlist = totalLiquid > 0 ? Math.min((totalWishlist / totalLiquid) * 100, 100) : totalWishlist > 0 ? 100 : 0;
+  const progressWishlist = saldoBRI > 0 ? Math.min((totalWishlist / saldoBRI) * 100, 100) : totalWishlist > 0 ? 100 : 0;
 
   const bukaEdit = (item) => {
     setEditingItem(item);
@@ -89,6 +89,19 @@ const Wishlist = () => {
     } finally { setSaving(false); }
   };
 
+  const hapusPermanen = async () => {
+    if (!deletingItem) return;
+    setSaving(true); setError("");
+    try {
+      await api.delete(`/wishlist/${deletingItem.id}`);
+      setItems((current) => current.filter((item) => item.id !== deletingItem.id));
+      setDeletingItem(null);
+    } catch (e) {
+      console.error(e);
+      setError(e.response?.data?.message || "Gagal menghapus item Checkout.");
+    } finally { setSaving(false); }
+  };
+
   const simpanEdit = async (event) => {
     event.preventDefault();
     const volumeAngka = Number(editVolume);
@@ -105,14 +118,29 @@ const Wishlist = () => {
     } finally { setSaving(false); }
   };
 
-  const tandaiSelesai = async (item) => {
+  const tandaiSelesai = async () => {
+    if (!checkingOutItem) return;
     setSaving(true); setError("");
     try {
-      const response = await api.patch(`/wishlist/${item.id}/checkout`);
-      setItems((current) => current.map((entry) => entry.id === item.id ? response.data.item : entry));
+      const response = await api.patch(`/wishlist/${checkingOutItem.id}/checkout`);
+      setItems((current) => current.map((entry) => entry.id === checkingOutItem.id ? response.data.item : entry));
+      setCheckingOutItem(null);
     } catch (e) {
       console.error(e);
       setError(e.response?.data?.message || "Gagal memindahkan item ke Checkout.");
+    } finally { setSaving(false); }
+  };
+
+  const batalkanCheckout = async () => {
+    if (!restoringItem) return;
+    setSaving(true); setError("");
+    try {
+      const response = await api.patch(`/wishlist/${restoringItem.id}/restore`);
+      setItems((current) => current.map((entry) => entry.id === restoringItem.id ? response.data.item : entry));
+      setRestoringItem(null);
+    } catch (e) {
+      console.error(e);
+      setError(e.response?.data?.message || "Gagal mengembalikan item ke Wishlist.");
     } finally { setSaving(false); }
   };
 
@@ -127,12 +155,12 @@ const Wishlist = () => {
       <Card className="border-hero-violet bg-hero-violet/15 p-6">
         <div className="grid gap-6 sm:grid-cols-2">
           <div><p className="text-[0.7rem] font-semibold uppercase tracking-[0.09em] text-slate">Total Wishlist</p><p className="mt-2 text-2xl font-bold tracking-tight text-ink-plum">{formatRupiah(totalWishlist)}</p></div>
-          <div><p className="text-[0.7rem] font-semibold uppercase tracking-[0.09em] text-slate">Arus Kas Liquid</p><p className="mt-2 text-2xl font-bold tracking-tight text-bitcoin-orange">{formatRupiah(totalLiquid)}</p></div>
+          <div><p className="text-[0.7rem] font-semibold uppercase tracking-[0.09em] text-slate">Saldo Bank BRI</p><p className="mt-2 text-2xl font-bold tracking-tight text-bitcoin-orange">{formatRupiah(saldoBRI)}</p></div>
         </div>
-        <div className="mt-5" role="progressbar" aria-label="Perbandingan total Wishlist dengan arus kas liquid" aria-valuenow={Math.round(progressWishlist)} aria-valuemin={0} aria-valuemax={100}>
-          <div className="mb-2 flex justify-between text-xs text-graphite"><span>Penggunaan arus kas liquid</span><span>{progressWishlist.toFixed(1)}%</span></div>
+        <div className="mt-5" role="progressbar" aria-label="Perbandingan total Wishlist dengan saldo Bank BRI" aria-valuenow={Math.round(progressWishlist)} aria-valuemin={0} aria-valuemax={100}>
+          <div className="mb-2 flex justify-between text-xs text-graphite"><span>Penggunaan saldo Bank BRI</span><span>{progressWishlist.toFixed(1)}%</span></div>
           <div className="h-3 overflow-hidden rounded-full bg-pure-white/80"><div className={`h-full rounded-full transition-all ${progressWishlist >= 100 ? "bg-rose" : "bg-mint"}`} style={{ width: `${progressWishlist}%` }} /></div>
-          <p className="mt-2 text-xs text-graphite">Sisa setelah Wishlist: {formatRupiah(totalLiquid - totalWishlist)}</p>
+          <p className="mt-2 text-xs text-graphite">Sisa saldo BRI setelah Wishlist: {formatRupiah(saldoBRI - totalWishlist)}</p>
         </div>
       </Card>
 
@@ -174,10 +202,15 @@ const Wishlist = () => {
                     <Button type="button" variant="danger" className="h-8 min-w-0 px-2 py-1" onClick={() => setDeletingItem(item)} disabled={saving} aria-label={`Hapus ${item.nama} dari Wishlist`} title="Hapus">
                       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
                     </Button>
-                    <Button type="button" className="h-8 min-w-0 px-2 py-1" onClick={() => tandaiSelesai(item)} disabled={saving} aria-label={`Selesai ${item.nama}`} title="Selesai">
+                    <Button type="button" className="h-8 min-w-0 px-2 py-1" onClick={() => setCheckingOutItem(item)} disabled={saving} aria-label={`Selesai ${item.nama}`} title="Selesai">
                       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg>
                     </Button>
-                  </> : <span className="text-sm text-mint">Selesai</span>}
+                  </> : <>
+                    <Button type="button" variant="muted" className="h-8 min-w-0 px-3 py-1 text-xs" onClick={() => setRestoringItem(item)} disabled={saving} aria-label={`Batalkan ${item.nama}`} title="Batalkan">Batalkan</Button>
+                    <Button type="button" variant="danger" className="h-8 min-w-0 px-2 py-1" onClick={() => setDeletingItem(item)} disabled={saving} aria-label={`Hapus permanen ${item.nama}`} title="Hapus permanen">
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+                    </Button>
+                  </>}
                 </div></td>
               </tr>)}
               {currentItems.length === 0 && <tr><td colSpan={6} className="text-center text-slate">{tab === "wishlist" ? "Belum ada item di Wishlist." : "Belum ada item di Checkout."}</td></tr>}
@@ -195,8 +228,16 @@ const Wishlist = () => {
         </form>
       </Modal>
 
-      <Modal open={!!deletingItem} onClose={() => !saving && setDeletingItem(null)} title="Konfirmasi Hapus" footer={<><Button variant="muted" type="button" onClick={() => setDeletingItem(null)} disabled={saving}>Batal</Button><Button variant="danger" type="button" onClick={hapusItem} disabled={saving}>{saving ? "Menghapus..." : "Ya, Hapus"}</Button></>}>
-        Yakin ingin menghapus <span className="font-semibold text-ink-plum">{deletingItem?.nama}</span> dari Wishlist?
+      <Modal open={!!checkingOutItem} onClose={() => !saving && setCheckingOutItem(null)} title="Konfirmasi Selesai" footer={<><Button variant="muted" type="button" onClick={() => setCheckingOutItem(null)} disabled={saving}>Kembali</Button><Button type="button" onClick={tandaiSelesai} disabled={saving}>{saving ? "Memproses..." : "Ya, Selesai"}</Button></>}>
+        Pindahkan <span className="font-semibold text-ink-plum">{checkingOutItem?.nama}</span> ke Checkout?
+      </Modal>
+
+      <Modal open={!!restoringItem} onClose={() => !saving && setRestoringItem(null)} title="Konfirmasi Batalkan" footer={<><Button variant="muted" type="button" onClick={() => setRestoringItem(null)} disabled={saving}>Kembali</Button><Button type="button" onClick={batalkanCheckout} disabled={saving}>{saving ? "Memproses..." : "Ya, Kembalikan"}</Button></>}>
+        Kembalikan <span className="font-semibold text-ink-plum">{restoringItem?.nama}</span> dari Checkout ke Wishlist?
+      </Modal>
+
+      <Modal open={!!deletingItem} onClose={() => !saving && setDeletingItem(null)} title={tab === "checkout" ? "Konfirmasi Hapus Permanen" : "Konfirmasi Hapus"} footer={<><Button variant="muted" type="button" onClick={() => setDeletingItem(null)} disabled={saving}>Batal</Button><Button variant="danger" type="button" onClick={tab === "checkout" ? hapusPermanen : hapusItem} disabled={saving}>{saving ? "Menghapus..." : tab === "checkout" ? "Ya, Hapus Permanen" : "Ya, Hapus"}</Button></>}>
+        {tab === "checkout" ? <>Yakin ingin menghapus permanen <span className="font-semibold text-ink-plum">{deletingItem?.nama}</span>? Item yang dihapus tidak dapat dikembalikan.</> : <>Yakin ingin menghapus <span className="font-semibold text-ink-plum">{deletingItem?.nama}</span> dari Wishlist?</>}
       </Modal>
     </div>
   );
